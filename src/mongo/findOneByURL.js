@@ -1,9 +1,30 @@
 const URL = require('./URLModel');
 
-module.exports.findOneByURL = (data, done) => {
-  console.log("findByURL", {data});
+module.exports.findOneByURL = (url, byOriginalURL = false, done) => {
+  console.log("findByURL", {url, byOriginalURL});
 
-  const searchParams = data.byOriginalURL ? {"original_url": data.url} : {"short_url": data.url}
+  // set searchParams
+  let searchParams;
+
+  // make sure short url is a number if required
+  if(byOriginalURL) {
+    // search by original_url
+    searchParams = {"original_url": url} 
+
+  } 
+  else {
+    // search by short URL
+    if(!isNaN(url)) {
+      // input url is numeric
+      searchParams = {"short_url": parseInt(url)}; 
+    }
+    else {
+      console.log("input short_url should be an integer number:", url);
+      return done({error: "input short_url should be an integer number: "+ url}); 
+    }
+  }
+
+  
 
   URL.findOne(searchParams, function(err, data) {
     console.log("find callback", {searchParams, data, err}); 

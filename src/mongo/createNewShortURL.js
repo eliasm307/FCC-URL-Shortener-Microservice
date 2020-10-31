@@ -10,10 +10,10 @@ module.exports.createNewShortURL = (data, done) => {
     return done({message: "no data provided to create new URL"});
   }
 
-  data.byOriginalURL = true;
+  // data.byOriginalURL = true;
 
   // check if URL already exists
-  findOneByURL(data, function(err, foundData) {
+  findOneByURL(data.url, true, function(err, foundData) {
 
     // handle callback error
     if(err) { 
