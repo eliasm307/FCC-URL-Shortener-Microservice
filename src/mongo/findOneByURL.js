@@ -1,7 +1,7 @@
 const URL = require('./URLModel');
 
-module.exports.findOneByURL = (url, byOriginalURL = false, done) => {
-  console.log("findByURL", {url, byOriginalURL});
+module.exports.findOneByURL = async (url, byOriginalURL = false, done) => {
+  console.log("findOneByURL", {url, byOriginalURL});
 
   // set searchParams
   let searchParams;
@@ -20,12 +20,13 @@ module.exports.findOneByURL = (url, byOriginalURL = false, done) => {
     }
     else {
       console.log("input short_url should be an integer number:", url);
-      return done({error: "input short_url should be an integer number: "+ url}); 
+      return Promise.reject({error: "input short_url should be an integer number: "+ url}); 
     }
   }
 
+  return URL.findOne(searchParams).exec();
   
-
+/*
   URL.findOne(searchParams, function(err, data) {
     console.log("find callback", {searchParams, data, err}); 
 
@@ -44,5 +45,6 @@ module.exports.findOneByURL = (url, byOriginalURL = false, done) => {
     }
  
   });
+  */
  
 }

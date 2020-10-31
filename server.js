@@ -11,6 +11,8 @@ const { sendTestGetRequest, sendTestPostRequest } = require("./src/testRequests"
 
 const app = express();
 app.use(cors());
+
+const SPACER = "--------------------------------------------------------------------------------------------------------";
  
 // connect to mongo
 mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -31,7 +33,10 @@ app.use('/public', express.static(process.cwd() + '/public'));
 
 // log all requests
 app.use((req, res, next) => {
+  console.log(SPACER);
   console.log(req.method + " " + req.path + " - " + req.ip);
+  console.log(SPACER);
+
   if(req.method === 'POST') console.log("req.body:", req.body)
   next();
 });
@@ -58,11 +63,27 @@ app.get("/api/shorturl", function (req, res) {
 
 // shorturl api handlers
 app.route("/api/shorturl/:shorturl")
-  .get(function (req, res, next) { 
-    handleGetOriginalURL(req, res, next, timeout); 
+  .get(async function (req, res, next) { 
+    
+    try{
+      await handleGetOriginalURL(req, res, next, timeout);  
+    }
+    catch(e) {
+      console.log("GET async error: ", e);
+      next();
+    }
+
   })
-  .post(function (req, res, next) {
-    handlePostNewURL(req, res, next, timeout); 
+  .post(async function (req, res, next) {
+    try {
+      await handlePostNewURL(req, res, next, timeout); 
+    }
+    catch(e) {
+      console.log("POST async error: ", e);
+      next();
+
+    }
+ 
   });
 
 

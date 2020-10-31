@@ -1,9 +1,9 @@
 const dns = require('dns');
-const urlExists = require("url-exists"); 
+const urlExists = require("url-exists-async-await"); 
 
 const { createNewShortURL } = require('../mongo/createNewShortURL')  
 
-module.exports.handlePostNewURL = (req, res, next, timeout) => {
+module.exports.handlePostNewURL = async (req, res, next, timeout) => {
 
   // handle new URL request
   console.log("Handling new URL request, shorturl param:", req.params.shorturl, ", short url body", req.body); 
@@ -27,67 +27,47 @@ module.exports.handlePostNewURL = (req, res, next, timeout) => {
   });
 
   // use url-exists tool to see if URL is valid
-  urlExists(req.body.url, (err, exists) => {
-    console.log("URL lookup callback for", req.body.url )
+  const exists = await urlExists(req.body.url);
+ 
+  // FCC test is broken so ignore these checks until it is fixed so tests pass
+  if (!exists && false) {
+    console.log("URL doesnt exist", {err, exists});
+    return res.json({error: 'invalid url'});
+  }
+  else {
 
-    // FCC test is broken so ignore these checks until it is fixed so tests pass
-    if(err && false) {
-      console.log("URL lookup error", {err});
-      return res.json({message: "URL lookup error", err});
+    console.log('URL exists: ', req.body.url, {exists} );
 
-    }
-      // FCC test is broken so ignore these checks until it is fixed so tests pass
-    else if (!exists && false) {
-      console.log("URL doesnt exist", {err, exists});
+    // Check the input URL starts with "http(s)://" instead of if it is a working link
+    //console.log("/^https{0,1}:\/\//.test(req.body.url):", /^https{0,1}:\/\//.test(req.body.url))
+    if(/^https{0,1}:\/\//.test(req.body.url)==false) {
+      console.log("URL is bad format", {exists});
       return res.json({error: 'invalid url'});
     }
-    else {
 
-      console.log('URL exists: ', req.body.url, {err, exists} );
+    // set timeout incase of an error
+    /*
+    var t = setTimeout(() => { 
+      //TODO investigate this as I dont think this will work
+      next({message: 'timeout'}); 
+      }, timeout
+    );
+    */
 
-      // Check the input URL starts with "http(s)://" instead of if it is a working link
-      //console.log("/^https{0,1}:\/\//.test(req.body.url):", /^https{0,1}:\/\//.test(req.body.url))
-      if(/^https{0,1}:\/\//.test(req.body.url)==false) {
-        console.log("URL is bad format", {err, exists});
-        return res.json({error: 'invalid url'});
-      }
+    const data = await createNewShortURL(req.body);
 
-      // set timeout incase of an error
-      var t = setTimeout(() => { 
-        next({message: 'timeout'}) 
-        }, timeout
-      );
+    // callback is being run so everything went well, stop the emergency timeout
+    // console.log("createNewShortURL callback, clearing timeout", {data});
+    // clearTimeout(t);  
 
-      createNewShortURL(req.body, function(err, data) {
-        console.log("createNewShortURL callback, clearing timeout", {err, data})
+    // send response using data
+    console.log("Sending response: ", data) 
+    return res.json({
+      "original_url": data["original_url"], 
+      "short_url":data["short_url"]
+    });  
 
-        // callback is being run so everything went well, stop the emergency timeout
-        clearTimeout(t);
-
-        // handle callback error
-        if(err) { 
-          console.log("createNewShortURL error", err)
-          return next(JSON.stringify(err)); 
-        }
-
-        // make sure callback contains data
-        if(!data) {
-          console.log('Missing `done()` argument');
-          return next({message: 'Missing callback argument'});
-        }
-  
-        // send response using data
-        console.log("Sending response: ", data)
-        
-        return res.json({
-          "original_url": data["original_url"], 
-          "short_url":data["short_url"]
-        }); 
-
-      });
+  };
  
-    }
 
-  });
-
-}
+};
